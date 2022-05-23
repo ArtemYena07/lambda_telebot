@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "first-attempt-bot"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-foaif9b5uy6j"
+s3_prefix = "first-attempt-bot"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

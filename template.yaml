@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  video_bot
+  Sample SAM Template for video_bot
+
+Resources:
+  BotFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: bot/
+      Handler: video_bot.lambda_handler
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Policies:
+        - AmazonDynamoDBFullAccess
+        - AmazonSSMManagedInstanceCore
+        - AmazonSNSFullAccess
+      Events:
+        BotApi:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: ANY
+
+  VideoTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: video-topic
+
+  CheckVideosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: check_videos/
+      Handler: check_videos.lambda_handler
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Policies:
+        - AmazonDynamoDBFullAccess
+        - AmazonSSMManagedInstanceCore
+        - AmazonSNSFullAccess
+      Environment:
+        Variables:
+          TOPIC_ARN: !Ref VideoTopic
+    Events:
+      VideoSchedule:
+        Type: Schedule
+        Properties:
+          Schedule: 'rate(10 minutes)'
+          Name: TestSchedule
+          Enabled: true
+
+  SendVideoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: send_video/
+      Handler: send_video.lambda_handler
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Policies:
+        - AmazonDynamoDBFullAccess
+        - AmazonSSMManagedInstanceCore
+        - AmazonSNSFullAccess
+    Events:
+      VideoToDownloadTopic:
+        Type: SNS
+        Properties:
+          Topic: !GetAtt VideoTopic.Arn
+
+  BotBase:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: chat_id
+        Type: Number
+      TableName: bot-base
+
+Outputs:
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
